@@ -22,6 +22,11 @@ if (!require("Metrics"))
 {install.packages("Metrics",dependencies=TRUE);
   library("Metrics")}
 
+# load caret package
+if (!require("caret")) 
+{install.packages("caret",dependencies=TRUE);
+  library("caret")}
+
 # LOAD DATA
 house_prices <- read.csv("HousePricesData-Address-City-Features_fromZillow.csv", header=TRUE, sep=';')
 cat("House prices info:")
@@ -51,7 +56,7 @@ xyplot(price~value|which, data=forplot,scales=list(relation="free"))
 ##############
 # exercise 3 #
 ##############
-set.seed(100)
+set.seed(300)
 sample <- sample.int(n = nrow(house_prices), size = floor(0.75*nrow(house_prices)), replace = F)
 train <- house_prices[sample,]
 test <- house_prices[-sample,]
@@ -65,15 +70,16 @@ test
 ##############
 
 # linear model 
-linear_model <- lm(zipcode~., data = train)
+linear_model <- lm(price~zipcode+year+bath+bed+rooms+SqFt, data = train)
 linear_model
 
+
 # regression tree CART
-cart_tree <- rpart(zipcode~., data=train, method = "anova")
+cart_tree <- rpart(price~zipcode+year+bath+bed+rooms+SqFt, data=train, method = "anova")
 cart_tree
 
 # neural network
-neural_network <- nnet(zipcode~., data = train, size = 12, skip = TRUE, linout = TRUE)
+neural_network <- nnet(price~zipcode+year+bath+bed+rooms+SqFt, data = train, size = 12, skip = TRUE, linout = TRUE)
 neural_network
 
 ##############
@@ -91,7 +97,7 @@ text(cart_tree, use.n=TRUE, all=TRUE, cex=.8)
 # neural network
 summary(neural_network)
 
-# As expected, the less informative is the neural network because of the trainning
+# As expected, the less informative is the neural network because of the training
 
 ##############
 # exercise 6 #
@@ -99,15 +105,66 @@ summary(neural_network)
 printcp(cart_tree)
 plotcp(cart_tree)
 
-# select the cp value with lowest cross validation error (xerror)
-pruned_tree <- prune(cart_tree, cp = 0.01)
+pruned_tree <- prune(cart_tree, cp = 0.0317)
 pruned_tree
+
+printcp(pruned_tree)
+plotcp(pruned_tree)
+
 plot(pruned_tree, main="Pruned Regression tree (CART)")
 text(pruned_tree, use.n=TRUE, all=TRUE, cex=.8)
 
 ##############
 # exercise 7 #
 ##############
-predictions <- predict(linear_model, test)
-rmse(test, cart_tree)
-mae(house_prices, train)
+
+# linear model
+# test
+prediction <- predict(linear_model, test)
+rmse(prediction, test$price)
+mae(prediction, test$price)
+# train
+prediction2 <- predict(linear_model, train)
+rmse(prediction2, train$price)
+mae(prediction2, train$price)
+
+# regression tree CART
+# test
+prediction3 <- predict(cart_tree, test)
+rmse(prediction3, test$price)
+mae(prediction3, test$price)
+# train
+prediction4 <- predict(cart_tree, train)
+rmse(prediction4, train$price)
+mae(prediction4, train$price)
+
+# neural_network
+# test
+prediction5 <- predict(neural_network, test)
+rmse(prediction5, test$price)
+mae(prediction5, test$price)
+# train
+prediction6 <- predict(neural_network, train)
+rmse(prediction6, train$price)
+mae(prediction6, train$price)
+
+# The model that performs better for both training and test data is the CART tree
+
+##############
+# exercise 8 #
+##############
+model <- train(
+  price~zipcode+year+bath+bed+rooms+SqFt,
+  data = train,
+  method = "knn"
+)
+
+# test
+prediction7 <- predict(model, test)
+rmse(prediction7, test$price)
+mae(prediction7, test$price)
+# train
+prediction8 <- predict(model, train)
+rmse(prediction8, train$price)
+mae(prediction8, train$price)
+
